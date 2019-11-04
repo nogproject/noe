@@ -1,0 +1,28 @@
+From 65bbe420d95c95d3f0cef7315e2658bb9bbba41a Mon Sep 17 00:00:00 2001
+From: Steffen Prohaska <prohaska@zib.de>
+Date: Wed, 23 Aug 2017 10:48:39 +0200
+Subject: [PATCH 8/8] debian: Bump to Debian source+suffix
+ 2:4.2.14+dfsg-0+deb8u7+bcpfs3
+
+Signed-off-by: Steffen Prohaska <prohaska@zib.de>
+---
+ debian/changelog | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/debian/changelog b/debian/changelog
+index e4c8281a204..3622dcac930 100644
+--- a/debian/changelog
++++ b/debian/changelog
+@@ -1,3 +1,9 @@
++samba (2:4.2.14+dfsg-0+deb8u7+bcpfs3) stable; urgency=high
++
++  * New VFS module "disable_setfacl" to prevent POSIX ACL changes.
++
++ -- Steffen Prohaska <prohaska@zib.de>  Wed, 23 Aug 2017 10:47:54 +0200
++
+ samba (2:4.2.14+dfsg-0+deb8u7+bcpfs2) stable; urgency=high
+ 
+   * New option "inherit posix acls".
+-- 
+2.14.1.5.g5f4d673e87
+

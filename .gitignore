@@ -1,0 +1,5 @@
+.DS_Store
+/product/
+__pycache__
+nog.pyc
+*.swp

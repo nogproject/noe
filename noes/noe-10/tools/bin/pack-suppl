@@ -1,0 +1,25 @@
+#!/bin/bash
+# vim: sw=4
+set -o errexit -o nounset -o pipefail -o noglob
+
+tar="noe-10-suppl.tar.gz"
+
+rm -f "${tar}" "${tar}.asc"
+
+(
+    find samba-inherit-posix-acls -type f -print0
+    find . -name 'samba-vfs-disable-*_*.deb*' -type f -print0
+) \
+| gsed -z 's,^\./,,' \
+| gtar --null -T- \
+    --transform 's,^,noe-10/,' \
+    --owner root --group root \
+    -czf "${tar}"
+
+gpg -u 80C4AD33864BC422467D465AE938E2DA3D857F91 --detach-sign --armor "${tar}"
+
+git silo add -- "${tar}"
+git add -- "${tar}.asc"
+
+echo
+echo 'Continue with git status and commit.'

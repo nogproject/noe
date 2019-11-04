@@ -1,0 +1,99 @@
+From 97c72c49a997546f387d64ee25108450132165de Mon Sep 17 00:00:00 2001
+From: Steffen Prohaska <prohaska@zib.de>
+Date: Wed, 23 Aug 2017 10:41:11 +0200
+Subject: [PATCH 6/8] vfs_disable_setfacl: Module to disable POSIX ACL changes
+
+The VFS module `disable_setfacl` prevents ACL changes.  It should be
+used together with VFS module `disable_chmod`.
+
+Signed-off-by: Steffen Prohaska <prohaska@zib.de>
+---
+ source3/modules/vfs_disable_setfacl.c | 46 +++++++++++++++++++++++++++++++++++
+ source3/modules/wscript_build         |  8 ++++++
+ source3/wscript                       |  1 +
+ 3 files changed, 55 insertions(+)
+ create mode 100644 source3/modules/vfs_disable_setfacl.c
+
+diff --git a/source3/modules/vfs_disable_setfacl.c b/source3/modules/vfs_disable_setfacl.c
+new file mode 100644
+index 00000000000..3ce37b69294
+--- /dev/null
++++ b/source3/modules/vfs_disable_setfacl.c
+@@ -0,0 +1,46 @@
++/*
++
++The VFS module `disable_setfacl` prevents POSIX ACL changes by pretending that
++`sys_acl_set_*` and `sys_acl_delete_*` calls were successful without modifying
++the file system.  By itself, it does not prevent all mode changes.  It should
++be used together with the VFS module `disable_chmod`.
++
++The implementation is based on `examples/VFS/skel_opaque.c`.
++
++*/
++
++#include "../source3/include/includes.h"
++#include "lib/util/tevent_ntstatus.h"
++
++static int disable_setfacl_sys_acl_set_file(vfs_handle_struct *handle,
++					    const char *name,
++					    SMB_ACL_TYPE_T acltype,
++					    SMB_ACL_T theacl)
++{
++	return 0;
++}
++
++static int disable_setfacl_sys_acl_set_fd(vfs_handle_struct *handle,
++					  files_struct *fsp,
++					  SMB_ACL_T theacl)
++{
++	return 0;
++}
++
++static int disable_setfacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
++						   const char *path)
++{
++	return 0;
++}
++
++struct vfs_fn_pointers disable_setfacl_fns = {
++	.sys_acl_set_file_fn = disable_setfacl_sys_acl_set_file,
++	.sys_acl_set_fd_fn = disable_setfacl_sys_acl_set_fd,
++	.sys_acl_delete_def_file_fn = disable_setfacl_sys_acl_delete_def_file,
++};
++
++NTSTATUS vfs_disable_setfacl_init(void)
++{
++	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "disable_setfacl",
++				&disable_setfacl_fns);
++}
+diff --git a/source3/modules/wscript_build b/source3/modules/wscript_build
+index 446f5e14a52..d1f3a99f37f 100644
+--- a/source3/modules/wscript_build
++++ b/source3/modules/wscript_build
+@@ -520,3 +520,11 @@ bld.SAMBA3_MODULE('vfs_disable_chmod',
+                  init_function='',
+                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_disable_chmod'),
+                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_disable_chmod'))
++
++bld.SAMBA3_MODULE('vfs_disable_setfacl',
++                 subsystem='vfs',
++                 source='vfs_disable_setfacl.c',
++                 deps='',
++                 init_function='',
++                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_disable_setfacl'),
++                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_disable_setfacl'))
+diff --git a/source3/wscript b/source3/wscript
+index 9b4242b935e..6daa10f6190 100644
+--- a/source3/wscript
++++ b/source3/wscript
+@@ -1627,6 +1627,7 @@ main() {
+ 	default_shared_modules.extend(TO_LIST('vfs_snapper'))
+ 
+     default_shared_modules.extend(TO_LIST('vfs_disable_chmod'))
++    default_shared_modules.extend(TO_LIST('vfs_disable_setfacl'))
+ 
+     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
+     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
+-- 
+2.14.1.5.g5f4d673e87
+

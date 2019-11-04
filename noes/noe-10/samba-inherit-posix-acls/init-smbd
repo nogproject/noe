@@ -1,0 +1,126 @@
+#!/bin/bash
+# vim: sw=4
+set -o errexit -o nounset -o pipefail -o noglob
+
+main() {
+    initData testdata
+    initData testdata-disable-chmod
+    initData testdata-inherit-posix-acls
+    smbConf >'/samba/local.conf'
+    exec /usr/sbin/smbd -FS </dev/null
+}
+
+smbConf() {
+    cat <<\EOF
+[global]
+  unix extensions       = no
+  inherit permissions   = yes
+  log level             = 4
+
+[testdata]
+  path                  = /samba/testdata
+  browseable            = yes
+  wide links            = yes
+  writable              = yes
+  create mask           = 0660
+  force create mode     = 0660
+  directory mask        = 0770
+  force directory mode  = 0770
+  map archive           = no
+  map hidden            = no
+  map system            = no
+  inherit permissions   = no
+  inherit acls          = no
+
+[testdata-disable-chmod]
+  path                  = /samba/testdata-disable-chmod
+  browseable            = yes
+  wide links            = yes
+  writable              = yes
+  create mask           = 0660
+  force create mode     = 0660
+  directory mask        = 0770
+  force directory mode  = 0770
+  map archive           = no
+  map hidden            = no
+  map system            = no
+  inherit permissions   = no
+  inherit acls          = no
+  vfs objects           = disable_chmod disable_setfacl
+
+[testdata-inherit-posix-acls]
+  path                  = /samba/testdata-inherit-posix-acls
+  browseable            = yes
+  wide links            = yes
+  writable              = yes
+  create mask           = 0660
+  directory mask        = 0770
+  map archive           = no
+  map hidden            = no
+  map system            = no
+  inherit permissions   = no
+  inherit acls          = yes
+  # Option requires patch:
+  inherit posix acls    = yes
+  vfs objects           = disable_chmod disable_setfacl
+
+# eof
+EOF
+}
+
+initData() {
+    share="$1"
+    mkdir -p "/samba/${share}"
+
+    mkdir -p "/samba/${share}/device"
+    chown root:ag-foo "/samba/${share}/device"
+    chmod g+s "/samba/${share}/device"
+    setfacl --set-file=- "/samba/${share}/device" <<\EOF
+user::rwx
+group::---
+group:ag-foo:rwx
+group:bar-ops:rwx
+mask::rwx
+other::---
+default:user::rwx
+default:group::---
+default:group:ag-foo:rwx
+default:group:bar-ops:rwx
+default:mask::rwx
+default:other::---
+EOF
+
+    mkdir -p "/samba/${share}/projects"
+    chown root:ag-foo "/samba/${share}/projects"
+    chmod g+s "/samba/${share}/projects"
+    setfacl --set-file=- "/samba/${share}/projects" <<\EOF
+user::rwx
+group::---
+group:ag-foo:rwx
+mask::rwx
+other::---
+default:user::rwx
+default:group::---
+default:group:ag-foo:rwx
+default:mask::rwx
+default:other::---
+EOF
+
+    mkdir -p "/samba/${share}/people"
+    chown root:ag-foo "/samba/${share}/people"
+    chmod g+s "/samba/${share}/people"
+    setfacl --set-file=- "/samba/${share}/people" <<\EOF
+user::rwx
+group::---
+group:ag-foo:rwx
+mask::rwx
+other::---
+default:user::rwx
+default:group::---
+default:group:ag-foo:r-x
+default:mask::r-x
+default:other::---
+EOF
+}
+
+main "$@"

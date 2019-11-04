@@ -1,0 +1,180 @@
+# vi: ft=ruby sw=2
+
+# See usage instructions at end of file.
+#
+# See <https://help.ubuntu.com/community/SettingUpNFSHowTo> for Ubuntu setup.
+
+# `$dotfiles` that exist are copied to the VM home.
+$dotfiles =  [
+  ".inputrc",
+  ".tmux.conf",
+  ".gitconfig",
+]
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/bionic64"
+
+  # Copy existing dotfiles.
+  $dotfiles.each do |path|
+    hpath = File.join(ENV["HOME"], path)
+    if File.exist?(hpath) then
+      config.vm.provision "file", source: hpath, destination: path
+    end
+  end
+
+  config.vm.define "nfsd" do |nfsd|
+    nfsd.vm.network "private_network", ip: "192.168.120.2"
+    nfsd.vm.hostname = "nfsd"
+
+    nfsd.vm.provision "shell", inline: <<~'SHELL'
+      apt-get update
+      apt-get install -y nfs-kernel-server
+
+      mkdir /srv/nfs /srv/nfs/data
+      touch /srv/nfs/data/x
+      setfacl -m user:vagrant:rw- /srv/nfs/data/x
+      chown vagrant:vagrant -R /srv/nfs/data
+
+      cat >>/etc/exports <<\EOF
+
+      # Some instructions on the Internet suggest that an NFSv4 pseudo-root is
+      # necessary.  But NFSv4 works fine without:
+      #
+      # ```
+      # # `fsid=0` indicates the NFSv4 pseudo-root.
+      # /srv/nfs       192.168.120.3/32(fsid=0,sec=sys,crossmnt,rw,insecure,no_wdelay,async,no_subtree_check)
+      # ```
+
+      /srv/nfs/data  192.168.120.3/32(fsid=999,sec=sys,rw,insecure,no_wdelay,async,no_subtree_check)
+      EOF
+
+      exportfs -ra
+    SHELL
+  end
+
+  config.vm.define "nfsmnt" do |nfsmnt|
+    nfsmnt.vm.network "private_network", ip: "192.168.120.3"
+    nfsmnt.vm.hostname = "nfsmnt"
+
+    nfsmnt.vm.provision "shell", inline: <<~SHELL
+      apt-get update
+      apt-get install -y nfs-common nfs4-acl-tools
+    SHELL
+  end
+end
+
+=begin
+
+# Getting started with Vagrant
+
+To install Vagrant with VirtualBox provider on Mac:
+
+```
+brew cask install virtualbox
+brew cask install vagrant
+```
+
+Create the NFS server `nfsd` and NFS client `nfsmount` VMs:
+
+```
+vagrant up
+```
+
+After testing (see below), remove the VMs with:
+
+```
+vagrant destroy
+```
+
+# NFS mount
+
+Try NFS mount on the client:
+
+```
+vagrant ssh nfsmnt
+```
+
+To use NFSv4:
+
+```
+sudo mount -t nfs 192.168.120.2:/srv/nfs/data /mnt
+```
+
+The mount should use NFS v4:
+
+```
+$ mount | grep /mnt
+192.168.120.2:/srv/nfs/data on /mnt type nfs (...,vers=4.2,...)
+```
+
+To use NFSv3:
+
+```
+sudo mount -t nfs -o vers=3 192.168.120.2:/srv/nfs/data /mnt
+```
+
+```
+$ mount | grep /mnt
+192.168.120.2:/srv/nfs/data on /mnt type nfs (...,vers=3,...)
+```
+
+# NFSv4 pseudo-root
+
+If the export configured an NFSv4 pseudo-root `fsid=0`, the mount would have to
+be relative to it:
+
+```
+sudo mount -t nfs 192.168.120.2:/data /mnt
+```
+
+A mount of the full path would fall back to NFSv3:
+
+```
+sudo mount -t nfs 192.168.120.2:/srv/nfs/data /mnt
+```
+
+# ACLs
+
+When mounted with NFSv3, POSIX ACLs work, and `nfs4_getfacl` fails:
+
+```
+$ ls -l /mnt/x
+-rw-rw-r--+ 1 vagrant vagrant 0 Sep 20 12:44 /mnt/x
+
+$ getfacl /mnt/x
+# file: mnt/x
+# owner: vagrant
+# group: vagrant
+user::rw-
+user:vagrant:rw-
+group::rw-
+mask::rw-
+other::r--
+
+$ nfs4_getfacl /mnt/x
+Operation to request attribute not supported.
+```
+
+When mounted with NFSv4, POSIX ACLs are ignored, and `nfs4_getfacl` works,
+showing mapped POSIX ACLs:
+
+```
+$ ls -l /mnt/x
+-rw-rw-r-- 1 vagrant vagrant 0 Sep 20 12:44 /mnt/x
+
+$ getfacl /mnt/x
+# file: mnt/x
+# owner: vagrant
+# group: vagrant
+user::rw-
+group::rw-
+other::r--
+
+$ nfs4_getfacl /mnt/x
+A::OWNER@:rwatTcCy
+A::1000:rwatcy
+A::GROUP@:rwatcy
+A::EVERYONE@:rtcy
+```
+
+=end

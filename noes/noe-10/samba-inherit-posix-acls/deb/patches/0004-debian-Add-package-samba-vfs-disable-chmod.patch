@@ -1,0 +1,38 @@
+From 4c0dbca1a854a0f90746e94c450081fdd89257e5 Mon Sep 17 00:00:00 2001
+From: Steffen Prohaska <prohaska@zib.de>
+Date: Wed, 9 Aug 2017 13:11:50 +0200
+Subject: [PATCH 4/8] debian: Add package samba-vfs-disable-chmod
+
+Signed-off-by: Steffen Prohaska <prohaska@zib.de>
+---
+ debian/control                         | 8 ++++++++
+ debian/samba-vfs-disable-chmod.install | 1 +
+ 2 files changed, 9 insertions(+)
+ create mode 100644 debian/samba-vfs-disable-chmod.install
+
+diff --git a/debian/control b/debian/control
+index 7caf9646542..da492eb56fc 100644
+--- a/debian/control
++++ b/debian/control
+@@ -613,3 +613,11 @@ Description: clustered database to store temporary data
+   * CTDB supports a system of application specific management scripts, allowing
+     applications that depend on network or filesystem resources to be managed in
+     a highly available manner on a cluster.
++
++Package: samba-vfs-disable-chmod
++Architecture: any
++Depends: samba (>= 2:4.2.0), samba (<< 2:4.3.0)
++Enhances: samba
++Description: Samba Virtual FileSystem VFS module to disable chmod
++ The package contains a Samba VFS module that disables chmod calls by
++ pretending that they were successful without touching the filesystem.
+diff --git a/debian/samba-vfs-disable-chmod.install b/debian/samba-vfs-disable-chmod.install
+new file mode 100644
+index 00000000000..eb8f1b3934b
+--- /dev/null
++++ b/debian/samba-vfs-disable-chmod.install
+@@ -0,0 +1 @@
++usr/lib/*/samba/vfs/disable_chmod.so
+-- 
+2.14.1.5.g5f4d673e87
+

@@ -1,0 +1,33 @@
+#!/bin/bash
+# vim: sw=4
+set -o errexit -o nounset -o pipefail -o noglob
+
+pkgs=(
+    'samba-vfs-disable-chmod'
+    'samba-vfs-disable-setfacl'
+)
+
+rm -f 'tmp.tar'
+for pkg in "${pkgs[@]}"; do
+    (
+        cd 'samba-inherit-posix-acls' \
+        && docker-compose run -T samba bash -c '
+            tar -C /deb -cf- '"${pkg}"'_${SAMBA_PATCHED_DEB_VERSION}_amd64.deb
+        '
+    ) >'tmp.tar'
+
+    deb="$(tar -tf 'tmp.tar')"
+    rm -f "${deb}"
+    tar -xvf 'tmp.tar'
+    rm 'tmp.tar'
+
+    rm -f "${deb}.asc"
+    gpg -u 80C4AD33864BC422467D465AE938E2DA3D857F91 \
+        --detach-sign --armor "${deb}"
+
+    git silo add -- "${deb}"
+    git add -- "${deb}.asc"
+done
+
+echo
+echo 'Continue with git status and commit.'

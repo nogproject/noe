@@ -1,0 +1,8 @@
+#!/bin/bash
+set -o errexit -o pipefail -o noglob -o nounset
+
+git -C ../.. archive --prefix nogstorage_2017-02/ HEAD:nogstorage_2017-02 \
+| bzip2 >nogstorage_2017-02.tar.bz2
+
+git -C ../.. archive --prefix nog-store-fso_2017-08/ HEAD:nog-store-fso_2017-08 \
+| bzip2 >nog-store-fso_2017-08.tar.bz2

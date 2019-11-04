@@ -1,0 +1,22 @@
+#!/bin/bash
+set -o errexit -o pipefail -o noglob -o nounset
+
+git -C ~/2017/fuimages_nog-internal-research_2017 \
+    archive --prefix nog-store-fso_2017-08/ HEAD:nog-store-fso_2017-08 \
+| bzip2 >nog-store-fso_2017-08.tar.bz2
+
+git -C ~/2017/fuimages_nog-internal-research_2017 \
+    archive --prefix git-stat-shadow_2017-08/ HEAD:git-stat-shadow_2017-08 \
+| bzip2 >git-stat-shadow_2017-08.tar.bz2
+
+git -C ~/2017/fuimages_nog-internal-research_2017 \
+    archive --prefix nog-event-store_2017-08/ HEAD:nog-event-store_2017-08 \
+| bzip2 >nog-event-store_2017-08.tar.bz2
+
+
+for sub in backend packages/nog-fso packages/nog-fso-ui; do
+    under="$(tr '/' '_' <<<"${sub}")"
+    git -C ~/2016/fuimages_nog_2016 \
+        archive --prefix "fuimages_nog_2016_${under}/" origin/next:"${sub}" \
+    | bzip2 >"fuimages_nog_2016_${under}.tar.bz2"
+done

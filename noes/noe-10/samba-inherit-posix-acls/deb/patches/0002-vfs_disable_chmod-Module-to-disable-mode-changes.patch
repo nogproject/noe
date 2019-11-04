@@ -1,0 +1,102 @@
+From 5ccccc48fa5370b69ffae1d3236f52f05006e361 Mon Sep 17 00:00:00 2001
+From: Steffen Prohaska <prohaska@zib.de>
+Date: Wed, 9 Aug 2017 12:32:25 +0200
+Subject: [PATCH 2/8] vfs_disable_chmod: Module to disable mode changes
+
+`vfs_disable_chmod` disables chmod operations by pretending that they
+were successful.
+
+Signed-off-by: Steffen Prohaska <prohaska@zib.de>
+---
+ source3/modules/vfs_disable_chmod.c | 48 +++++++++++++++++++++++++++++++++++++
+ source3/modules/wscript_build       |  8 +++++++
+ source3/wscript                     |  2 ++
+ 3 files changed, 58 insertions(+)
+ create mode 100644 source3/modules/vfs_disable_chmod.c
+
+diff --git a/source3/modules/vfs_disable_chmod.c b/source3/modules/vfs_disable_chmod.c
+new file mode 100644
+index 00000000000..0ed2cbb6802
+--- /dev/null
++++ b/source3/modules/vfs_disable_chmod.c
+@@ -0,0 +1,48 @@
++/*
++
++The VFS module `disable_chmod` disables all mode changes by pretending that
++`*chmod*()` calls were successful.
++
++The implementation is based on `examples/VFS/skel_opaque.c`.
++
++*/
++
++#include "../source3/include/includes.h"
++#include "lib/util/tevent_ntstatus.h"
++
++static int disable_chmod_chmod(vfs_handle_struct *handle, const char *path,
++			       mode_t mode)
++{
++	return 0;
++}
++
++static int disable_chmod_fchmod(vfs_handle_struct *handle, files_struct *fsp,
++				mode_t mode)
++{
++	return 0;
++}
++
++static int disable_chmod_chmod_acl(vfs_handle_struct *handle,
++				       const char *name, mode_t mode)
++{
++	return 0;
++}
++
++static int disable_chmod_fchmod_acl(vfs_handle_struct *handle,
++				        files_struct *fsp, mode_t mode)
++{
++	return 0;
++}
++
++struct vfs_fn_pointers disable_chmod_fns = {
++	.chmod_fn = disable_chmod_chmod,
++	.fchmod_fn = disable_chmod_fchmod,
++	.chmod_acl_fn = disable_chmod_chmod_acl,
++	.fchmod_acl_fn = disable_chmod_fchmod_acl,
++};
++
++NTSTATUS vfs_disable_chmod_init(void)
++{
++	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "disable_chmod",
++				&disable_chmod_fns);
++}
+diff --git a/source3/modules/wscript_build b/source3/modules/wscript_build
+index e5d04f7b74f..446f5e14a52 100644
+--- a/source3/modules/wscript_build
++++ b/source3/modules/wscript_build
+@@ -512,3 +512,11 @@ bld.SAMBA3_MODULE('vfs_vxfs',
+                  init_function='',
+                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_vxfs'),
+                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_vxfs'))
++
++bld.SAMBA3_MODULE('vfs_disable_chmod',
++                 subsystem='vfs',
++                 source='vfs_disable_chmod.c',
++                 deps='',
++                 init_function='',
++                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_disable_chmod'),
++                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_disable_chmod'))
+diff --git a/source3/wscript b/source3/wscript
+index f7fded880d1..9b4242b935e 100644
+--- a/source3/wscript
++++ b/source3/wscript
+@@ -1626,6 +1626,8 @@ main() {
+     if conf.CONFIG_SET('HAVE_DBUS'):
+ 	default_shared_modules.extend(TO_LIST('vfs_snapper'))
+ 
++    default_shared_modules.extend(TO_LIST('vfs_disable_chmod'))
++
+     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
+     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
+ 
+-- 
+2.14.1.5.g5f4d673e87
+

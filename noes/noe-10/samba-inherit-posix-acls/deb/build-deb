@@ -1,0 +1,95 @@
+#!/bin/bash
+# vim: sw=4
+set -o errexit -o nounset -o pipefail -o noglob
+
+# The module source is build inside the Samba source as explained at
+# <https://wiki.samba.org/index.php/Writing_a_Samba_VFS_Module#Building_Your_VFS_Module>.
+# using a full Debian build to ensure that the build flags match the Debian
+# release.
+
+# `dpkg-buildpackage` determines the output version from `debian/changelog`;
+# see `version.*mustsetvar.*changelog` in source `/usr/bin/dpkg-buildpackage`.
+# Our patches, therefore, must add a changelog section that matches the
+# `SAMBA_PATCHED_PKG_VERSION`, so that the output debs get the desired version.
+: ${SAMBA_SRC_VERSION:=4.2.14+dfsg}
+: ${SAMBA_PKG_VERSION:=2:4.2.14+dfsg-0+deb8u7+b1}
+: ${SAMBA_PATCHED_PKG_VERSION:=2:4.2.14+dfsg-0+deb8u7+bcpfs3}
+
+cat >>/etc/apt/sources.list <<\EOF
+deb-src http://deb.debian.org/debian jessie main
+deb-src http://deb.debian.org/debian jessie-updates main
+deb-src http://security.debian.org jessie/updates main
+EOF
+
+set -x
+
+# Install packages listed in Build-Depends `samba-${SAMBA_SRC_VERSION}/debian/control`.
+apt-get update
+apt-get -y install \
+    dpkg-dev \
+    bison \
+    debhelper \
+    dh-systemd \
+    docbook-xml \
+    docbook-xsl \
+    faketime \
+    flex \
+    libacl1-dev \
+    libaio-dev \
+    libarchive-dev \
+    libattr1-dev \
+    libblkid-dev \
+    libbsd-dev \
+    libcap-dev \
+    libcups2-dev \
+    libgnutls28-dev \
+    libheimntlm0-heimdal \
+    libldap2-dev \
+    libldb-dev \
+    libncurses5-dev \
+    libntdb-dev \
+    libpam0g-dev \
+    libparse-yapp-perl \
+    libpcap-dev \
+    libpopt-dev \
+    libreadline-dev \
+    libsubunit-dev \
+    libtalloc-dev \
+    libtdb-dev \
+    libtevent-dev \
+    perl \
+    perl-modules \
+    pkg-config \
+    po-debconf \
+    python-all-dev \
+    python-dnspython \
+    python-ldb \
+    python-ldb-dev \
+    python-ntdb \
+    python-talloc-dev \
+    python-tdb \
+    python-testtools \
+    python3 \
+    subunit \
+    xsltproc \
+    zlib1g-dev
+apt-get clean
+
+# Fetch Debian source.
+gpg --keyserver ha.pool.sks-keyservers.net --recv-keys AAA58B842E882CF414E0BAB1A7C72A1C782B8C3F
+gpg --export AAA58B842E882CF414E0BAB1A7C72A1C782B8C3F >~/.gnupg/trustedkeys.gpg
+apt-get source samba=${SAMBA_PKG_VERSION}
+find . -name 'samba_*.dsc' -print0 | xargs -0 echo gpg --verify
+
+# Build.
+cd "samba-${SAMBA_SRC_VERSION}"
+find ../patches -name '*.patch' | sort | xargs -n 1 patch -p1 -u -i
+EDITOR=/bin/true dpkg-source -q --commit . inherit-posix-acls.patch
+
+# Ensure that output deb get the expected version.
+if ! head -n 1 'debian/changelog' | fgrep -q "${SAMBA_PATCHED_PKG_VERSION}"; then
+    echo >&2 "fatal: \`debian/changelog\` must begin with ${SAMBA_PATCHED_PKG_VERSION}."
+    exit 1
+fi
+
+dpkg-buildpackage -us -uc

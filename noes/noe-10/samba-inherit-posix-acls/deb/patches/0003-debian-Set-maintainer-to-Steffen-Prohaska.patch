@@ -1,0 +1,38 @@
+From 65f444518bb53627f983852444baf657f6b758af Mon Sep 17 00:00:00 2001
+From: Steffen Prohaska <prohaska@zib.de>
+Date: Wed, 9 Aug 2017 13:11:50 +0200
+Subject: [PATCH 3/8] debian: Set maintainer to Steffen Prohaska
+
+The maintainer is changed to indicate responsibility for the patched
+version.
+
+Signed-off-by: Steffen Prohaska <prohaska@zib.de>
+---
+ debian/control | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/debian/control b/debian/control
+index d6b397d1c85..7caf9646542 100644
+--- a/debian/control
++++ b/debian/control
+@@ -1,7 +1,7 @@
+ Source: samba
+ Section: net
+ Priority: optional
+-Maintainer: Debian Samba Maintainers <pkg-samba-maint@lists.alioth.debian.org>
++Maintainer: Steffen Prohaska <prohaska@zib.de>
+ Uploaders: Steve Langasek <vorlon@debian.org>,
+            Christian Perrier <bubulle@debian.org>,
+            Jelmer Vernooij <jelmer@debian.org>,
+@@ -117,6 +117,8 @@ Description: SMB/CIFS file, print, and login server for Unix
+  .
+  This package is not required for connecting to existing SMB/CIFS servers
+  (see smbclient) or for mounting remote filesystems (see cifs-utils).
++ .
++ This version contains a patch to inherit default POSIX ACLs.
+ 
+ Package: samba-libs
+ Pre-Depends: ${misc:Pre-Depends}
+-- 
+2.14.1.5.g5f4d673e87
+

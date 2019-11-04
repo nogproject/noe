@@ -1,0 +1,40 @@
+From 8667ee476e099ad7588b586094af6f3c82f3d729 Mon Sep 17 00:00:00 2001
+From: Steffen Prohaska <prohaska@zib.de>
+Date: Wed, 9 Aug 2017 13:11:50 +0200
+Subject: [PATCH 7/8] debian: Add package samba-vfs-disable-setfacl
+
+Signed-off-by: Steffen Prohaska <prohaska@zib.de>
+---
+ debian/control                           | 10 ++++++++++
+ debian/samba-vfs-disable-setfacl.install |  1 +
+ 2 files changed, 11 insertions(+)
+ create mode 100644 debian/samba-vfs-disable-setfacl.install
+
+diff --git a/debian/control b/debian/control
+index da492eb56fc..a6b65f8f378 100644
+--- a/debian/control
++++ b/debian/control
+@@ -621,3 +621,13 @@ Enhances: samba
+ Description: Samba Virtual FileSystem VFS module to disable chmod
+  The package contains a Samba VFS module that disables chmod calls by
+  pretending that they were successful without touching the filesystem.
++
++Package: samba-vfs-disable-setfacl
++Architecture: any
++Depends: samba (>= 2:4.2.0), samba (<< 2:4.3.0)
++Enhances: samba
++Description: Samba Virtual FileSystem VFS module to disable POSIX ACL changes
++ The package contains a Samba VFS module that prevents changes to POSIX ACLs by
++ pretending that sys_acl_set_* and sys_acl_delete_* VFS calls were successful
++ without touching the filesystem.  The package should be used together with
++ samba-vfs-disable-chmod.
+diff --git a/debian/samba-vfs-disable-setfacl.install b/debian/samba-vfs-disable-setfacl.install
+new file mode 100644
+index 00000000000..69062e5bb0f
+--- /dev/null
++++ b/debian/samba-vfs-disable-setfacl.install
+@@ -0,0 +1 @@
++usr/lib/*/samba/vfs/disable_setfacl.so
+-- 
+2.14.1.5.g5f4d673e87
+

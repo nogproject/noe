@@ -1,0 +1,13 @@
+version: '2'
+volumes:
+  samba: {}
+services:
+  samba:
+    hostname: samba
+    container_name: samba
+    build: .
+    image: samba:noe-10
+    volumes:
+      - samba:/samba
+    ports:
+      - "127.0.0.1:9139:139"
