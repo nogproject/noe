@@ -7,7 +7,6 @@ This repo contains the Nog Evolution Proposals.  See
 
 Locations:
 
-* <https://git.imp.fu-berlin.de/bcp/noe>: Limited Git history, without
-  supplementary repo.
-* The usual project location at ZIB: Extended Git history and supplementary
-  repo.
+* <https://github.com/nogproject/noe>: selected branches
+* <https://git.imp.fu-berlin.de/bcp/noe>: selected branches
+* ZIB Project: Full Git history and supplementary repo
